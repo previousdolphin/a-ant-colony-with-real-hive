@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ant Colony — a living hive, drawn in crayon</title>
+<meta name="description" content="A side-view ant colony simulation: a queen lays eggs, nurses raise larvae, foragers hunt for food and lay scent trails, and diggers extend the tunnels — a new colony every time you load it.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Patrick+Hand&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+
+<!-- STAGE START -->
+<main class="stage" id="stage">
+
+  <canvas id="sim-canvas" aria-hidden="true"></canvas>
+
+  <p class="sr-only">An interactive side-view ant colony simulation: a queen lays eggs, nurses raise larvae in the nursery, foragers search the surface for food and lay scent trails home, and digger ants keep extending the tunnels. The colony is procedurally generated anew on every load or reset.</p>
+
+  <noscript>
+    <div class="noscript-note">
+      <p>This hive needs JavaScript to dig, forage and hatch. Enable it to watch the colony live.</p>
+    </div>
+  </noscript>
+
+  <!-- HUD START -->
+  <section class="hud" aria-label="Colony dashboard">
+    <h1 class="hud-title">ANT COLONY</h1>
+    <p class="hud-hint">tap the sky to drop food · tap the dirt to say hi</p>
+    <dl class="hud-stats">
+      <div class="stat"><dt>ants</dt><dd id="stat-ants">0</dd></div>
+      <div class="stat"><dt>food</dt><dd id="stat-food">0</dd></div>
+      <div class="stat"><dt>eggs</dt><dd id="stat-eggs">0</dd></div>
+    </dl>
+    <div class="hud-buttons">
+      <button type="button" id="btn-about" aria-haspopup="dialog" title="What is this?">?</button>
+      <button type="button" id="btn-sound" aria-pressed="false" title="Toggle sound">🔇</button>
+      <button type="button" id="btn-speed" title="Cycle simulation speed">1×</button>
+      <button type="button" id="btn-reset" title="Dig a brand new colony">↻ New Colony</button>
+    </div>
+  </section>
+  <!-- HUD END -->
+
+  <!-- ABOUT START -->
+  <section class="about-panel" id="about-panel" role="dialog" aria-label="About this simulation" hidden>
+    <h2>What's happening down there?</h2>
+    <p>This is a tiny biological simulation, not a video to watch passively — it keeps running until you reload the page.</p>
+    <ul>
+      <li><strong>The queen</strong> lays an egg whenever there's enough stored food and room for another ant.</li>
+      <li><strong>Eggs</strong> become larvae, then pupae, then hatch into a brand new worker — forager, nurse, or digger.</li>
+      <li><strong>Nurses</strong> tend the nursery and ferry food to the growing larvae.</li>
+      <li><strong>Foragers</strong> climb to the surface, wander for seeds and leaves, and lay a scent trail home when they find one — so the colony gets better at finding food over time.</li>
+      <li><strong>Diggers</strong> keep extending the tunnels deeper and wider as the colony grows.</li>
+    </ul>
+    <p>Every load (and every "New Colony") digs a completely different hive. Click the sky to drop food, click the dirt to greet an ant, or use <kbd>F</kbd> / <kbd>M</kbd> / <kbd>R</kbd> / <kbd>?</kbd> on your keyboard.</p>
+    <button type="button" id="btn-about-close">Got it</button>
+  </section>
+  <!-- ABOUT END -->
+
+</main>
+<!-- STAGE END -->
+
+<footer class="corner-footer">
+  <p class="yvow-credit">Built with help from <a href="https://yourveryownweb.site" rel="noopener">YourVeryOwnWeb.site</a></p>
+</footer>
+
+<script src="assets/js/scripts.js"></script>
+</body>
+</html>

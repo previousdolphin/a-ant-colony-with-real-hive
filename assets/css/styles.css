@@ -1,0 +1,274 @@
+/* ============================================================
+   ANT COLONY — crayon-sketch side-view simulation
+   Palette (user overrides): mint bg, two greens, deep ink
+   ============================================================ */
+
+:root{
+  --bg: #59e8b5;
+  --accent1: #19c346;
+  --accent2: #6ce139;
+  --ink: #28382c;
+
+  /* derived tints, hand-mixed from the four brand colors above */
+  --card-bg: #d9f8ec;
+  --card-bg-strong: #c2f3df;
+  --sky-tint: #a6f0d6;
+
+  --font-head: 'Baloo 2', 'Segoe UI Rounded', system-ui, sans-serif;
+  --font-body: 'Patrick Hand', 'Comic Sans MS', system-ui, sans-serif;
+}
+
+*{ box-sizing: border-box; }
+
+html, body{
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden; /* the stage fills the screen; no page scroll */
+  background: var(--bg);
+  font-family: var(--font-body);
+  color: var(--ink);
+}
+
+/* ---- STAGE ---- */
+.stage{
+  position: relative;
+  width: 100vw;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+#sim-canvas{
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.sr-only{
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.noscript-note{
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  text-align: center;
+}
+.noscript-note p{
+  background: var(--card-bg);
+  border: 3px solid var(--ink);
+  border-radius: 18px 26px 20px 24px;
+  padding: 1.2rem 1.6rem;
+  font-family: var(--font-head);
+  font-size: clamp(1rem, 2.5vw, 1.3rem);
+  max-width: 32rem;
+}
+
+/* ---- HUD ---- */
+.hud{
+  position: absolute;
+  top: clamp(0.6rem, 2vw, 1.4rem);
+  left: clamp(0.6rem, 2vw, 1.4rem);
+  z-index: 20;
+  background: var(--card-bg);
+  border: 3px solid var(--ink);
+  border-radius: 14px 22px 16px 20px;
+  box-shadow: 4px 5px 0 rgba(40,56,44,0.25);
+  padding: 0.7rem 0.9rem 0.8rem;
+  max-width: min(78vw, 20rem);
+}
+
+.hud-title{
+  font-family: var(--font-head);
+  font-weight: 800;
+  font-size: clamp(1.1rem, 4vw, 1.5rem);
+  margin: 0 0 0.15rem;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+}
+
+.hud-hint{
+  margin: 0 0 0.55rem;
+  font-size: clamp(0.72rem, 2.4vw, 0.85rem);
+  opacity: 0.8;
+  line-height: 1.25;
+}
+
+.hud-stats{
+  display: flex;
+  gap: 0.9rem;
+  margin: 0 0 0.6rem;
+  flex-wrap: wrap;
+}
+.hud-stats .stat{
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.hud-stats dt{
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.7;
+}
+.hud-stats dd{
+  margin: 0;
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: clamp(1rem, 3vw, 1.25rem);
+  color: var(--accent1);
+}
+
+.hud-buttons{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.hud-buttons button{
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: 0.85rem;
+  border: 2.5px solid var(--ink);
+  background: var(--accent2);
+  color: var(--ink);
+  border-radius: 10px 14px 10px 14px;
+  padding: 0.5rem 0.7rem;
+  min-height: 44px;
+  min-width: 44px;
+  cursor: pointer;
+  box-shadow: 2px 3px 0 rgba(40,56,44,0.3);
+  transition: transform 0.12s ease, background 0.15s ease;
+}
+.hud-buttons button:hover{
+  background: var(--accent1);
+  transform: translateY(-1px);
+}
+.hud-buttons button:active{
+  transform: translateY(1px);
+  box-shadow: 1px 1px 0 rgba(40,56,44,0.3);
+}
+#btn-reset{ flex: 1 1 100%; }
+
+button:focus-visible,
+a:focus-visible{
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
+
+/* ---- ABOUT PANEL ---- */
+.stage.about-open::after{
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: rgba(40,56,44,0.55);
+  z-index: 30;
+}
+
+.about-panel{
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 40;
+  background: var(--card-bg-strong);
+  border: 3px solid var(--ink);
+  border-radius: 20px 28px 18px 26px;
+  box-shadow: 6px 7px 0 rgba(40,56,44,0.3);
+  padding: 1.3rem 1.5rem;
+  width: min(92vw, 34rem);
+  max-height: 86vh;
+  overflow-y: auto;
+}
+
+.about-panel h2{
+  font-family: var(--font-head);
+  font-weight: 800;
+  margin-top: 0;
+  font-size: clamp(1.2rem, 4vw, 1.6rem);
+}
+
+.about-panel p{ line-height: 1.5; }
+
+.about-panel ul{
+  padding-left: 1.2rem;
+  line-height: 1.5;
+}
+.about-panel li{ margin-bottom: 0.4rem; }
+
+.about-panel kbd{
+  font-family: var(--font-body);
+  background: var(--bg);
+  border: 2px solid var(--ink);
+  border-radius: 5px;
+  padding: 0 0.35rem;
+}
+
+.about-panel button{
+  font-family: var(--font-head);
+  font-weight: 700;
+  border: 2.5px solid var(--ink);
+  background: var(--accent1);
+  color: var(--ink);
+  border-radius: 10px 14px 10px 14px;
+  padding: 0.6rem 1.1rem;
+  min-height: 44px;
+  cursor: pointer;
+  margin-top: 0.4rem;
+  box-shadow: 2px 3px 0 rgba(40,56,44,0.3);
+}
+.about-panel button:hover{ background: var(--accent2); }
+
+/* ---- FOOTER / CREDIT ---- */
+.corner-footer{
+  position: fixed;
+  bottom: 0.4rem;
+  right: 0.6rem;
+  z-index: 15;
+  pointer-events: none;
+}
+.yvow-credit{
+  margin: 0;
+  font-size: 0.68rem;
+  color: var(--ink);
+  opacity: 0.55;
+  background: rgba(217,248,236,0.6);
+  padding: 0.1rem 0.4rem;
+  border-radius: 6px;
+  pointer-events: auto;
+}
+.yvow-credit a{
+  color: var(--ink);
+  text-decoration: underline;
+}
+
+/* ---- RESPONSIVE ---- */
+@media (min-width: 768px){
+  .hud{ padding: 0.9rem 1.1rem 1rem; max-width: 22rem; }
+  .hud-stats{ gap: 1.3rem; }
+  .hud-buttons button{ font-size: 0.9rem; }
+}
+
+@media (min-width: 1024px){
+  .hud{ max-width: 24rem; }
+  .hud-title{ font-size: 1.7rem; }
+}
+
+@media (prefers-reduced-motion: reduce){
+  .hud-buttons button,
+  .about-panel button{ transition: none; }
+}
