@@ -1,5 +1,5 @@
 /* ============================================================
-   ANT COLONY — crayon-sketch side-view biological simulation
+   ANT COLONY — crayon & construction-paper cutout simulation
    Vanilla JS, canvas 2D. Procedurally generated every load.
    ============================================================ */
 (function(){
@@ -31,11 +31,12 @@
     base: BASE,
     skyTop: mixHex(BASE,'#ffffff',0.45),
     skyHorizon: BASE,
-    cloud: mixHex(BASE,'#ffffff',0.72),
+    cloud: mixHex(BASE,'#ffffff',0.74),
     dirt: INK,
     hatch: rgba(ACCENT1,0.16),
-    tunnel: mixHex(INK, BASE, 0.30),
-    tunnelRim: mixHex(INK, '#000000', 0.25),
+    tunnelPaper: mixHex(INK, BASE, 0.38),
+    tunnelRim: mixHex(INK, '#000000', 0.22),
+    chamberPaper: mixHex(BASE, '#ffffff', 0.55),
     diggerColor: mixHex(INK, BASE, 0.18),
     eggColor: mixHex(BASE, '#ffffff', 0.6),
     pupaColor: mixHex(INK, ACCENT1, 0.45)
@@ -43,6 +44,7 @@
 
   /* ---------- CONFIG ---------- */
   const REDUCED = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const JITTER = REDUCED ? 0.3 : 1;
   const CFG = {
     maxAnts: REDUCED ? 20 : 34,
     maxNodes: REDUCED ? 150 : 230,
@@ -132,6 +134,82 @@
   function lerpAngle(a,b,t){
     let diff = ((b - a + Math.PI*3) % (Math.PI*2)) - Math.PI;
     return a + diff*t;
+  }
+
+  /* ---------- CRAYON / PAPER-CUTOUT RENDER HELPERS ----------
+     Every drawn shape is treated like a piece of cut construction
+     paper: a soft offset shadow sliver underneath, a flat paper
+     fill, then a couple of jittered waxy-crayon outline passes.
+  ---------------------------------------------------------- */
+  function paperShape(buildFn, fillColor, edgeColor, edgeWidth){
+    const passes = REDUCED ? 1 : 2;
+    // paper shadow, offset like a glued-down cutout
+    ctx.save();
+    ctx.translate(1.6*JITTER, 2.3*JITTER);
+    ctx.globalAlpha = 0.18;
+    ctx.fillStyle = COLORS.ink;
+    buildFn();
+    ctx.fill();
+    ctx.restore();
+    // flat paper fill
+    buildFn();
+    ctx.fillStyle = fillColor;
+    ctx.fill();
+    // waxy crayon edge, a couple of jittered passes
+    for(let i=0;i<passes;i++){
+      ctx.save();
+      ctx.translate((Math.random()-0.5)*0.9*JITTER, (Math.random()-0.5)*0.9*JITTER);
+      buildFn();
+      ctx.strokeStyle = rgba(edgeColor, 0.5+Math.random()*0.3);
+      ctx.lineWidth = (edgeWidth||1.4)*(0.75+Math.random()*0.4);
+      ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+  function crayonLine(buildFn, color, width, passes){
+    passes = passes || (REDUCED ? 1 : 2);
+    for(let p=0;p<passes;p++){
+      ctx.save();
+      ctx.translate((Math.random()-0.5)*width*0.35*JITTER, (Math.random()-0.5)*width*0.35*JITTER);
+      buildFn();
+      ctx.strokeStyle = rgba(color, 0.45+Math.random()*0.35);
+      ctx.lineWidth = width*(0.7+Math.random()*0.5);
+      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  /* ---------- PAPER-FIBER GRAIN TEXTURE (baked once, tiled) ---------- */
+  let grainCanvas = null, grainPattern = null;
+  function buildGrainTexture(){
+    const size = 220;
+    const gc = document.createElement('canvas');
+    gc.width = size; gc.height = size;
+    const gctx = gc.getContext('2d');
+    const speckCount = REDUCED ? 900 : 1800;
+    for(let i=0;i<speckCount;i++){
+      const x = Math.random()*size, y = Math.random()*size;
+      const len = 1+Math.random()*3;
+      const ang = Math.random()*Math.PI*2;
+      const dark = Math.random() < 0.55;
+      const alpha = 0.035+Math.random()*0.06;
+      gctx.strokeStyle = dark ? rgba(INK, alpha) : rgba('#ffffff', alpha);
+      gctx.lineWidth = 0.5+Math.random()*0.7;
+      gctx.beginPath();
+      gctx.moveTo(x,y);
+      gctx.lineTo(x+Math.cos(ang)*len, y+Math.sin(ang)*len);
+      gctx.stroke();
+    }
+    return gc;
+  }
+  function getGrainPattern(){
+    if(!grainPattern){
+      grainCanvas = buildGrainTexture();
+      grainPattern = ctx.createPattern(grainCanvas, 'repeat');
+    }
+    return grainPattern;
   }
 
   /* ---------- WORLD GRAPH HELPERS ---------- */
@@ -254,45 +332,54 @@
   function drawEdgeStamp(edge){
     const a = W.nodes[edge.a], b = W.nodes[edge.b];
     const tctx = W.terrainCtx;
-    const w1 = (a.radius||6)*2.2, w2 = (b.radius||6)*2.2;
+    const w1 = (a.radius||6)*2.3, w2 = (b.radius||6)*2.3;
     const steps = Math.max(3, Math.round(Math.hypot(b.x-a.x, b.y-a.y)/6));
-    tctx.fillStyle = COLORS.tunnel;
+    // ink rim pass first, slightly wider & jittered — reads as the cut edge of the paper
+    tctx.fillStyle = COLORS.tunnelRim;
     for(let i=0;i<=steps;i++){
       const t = i/steps;
       const x = a.x + (b.x-a.x)*t, y = a.y + (b.y-a.y)*t;
-      const r = Math.max(3, ((w1+(w2-w1)*t)/2) * (0.88+Math.random()*0.26));
+      const r = Math.max(3.4, ((w1+(w2-w1)*t)/2) * (0.95+Math.random()*0.25));
+      tctx.beginPath(); tctx.arc(x+(Math.random()-0.5)*1.4, y+(Math.random()-0.5)*1.4, r, 0, Math.PI*2); tctx.fill();
+    }
+    // lighter paper fill, slightly smaller so the rim shows through as an outline
+    tctx.fillStyle = COLORS.tunnelPaper;
+    for(let i=0;i<=steps;i++){
+      const t = i/steps;
+      const x = a.x + (b.x-a.x)*t, y = a.y + (b.y-a.y)*t;
+      const r = Math.max(2.6, ((w1+(w2-w1)*t)/2) * (0.78+Math.random()*0.18));
       tctx.beginPath(); tctx.arc(x,y,r,0,Math.PI*2); tctx.fill();
     }
-    tctx.strokeStyle = COLORS.tunnelRim;
-    tctx.lineWidth = 1.2;
-    tctx.globalAlpha = 0.3;
-    tctx.beginPath(); tctx.moveTo(a.x,a.y); tctx.lineTo(b.x,b.y); tctx.stroke();
-    tctx.globalAlpha = 1;
   }
   function drawChamberStamp(node){
     const tctx = W.terrainCtx;
     const r = node.radius * 1.9;
-    tctx.fillStyle = COLORS.tunnel;
+    tctx.fillStyle = COLORS.tunnelRim;
+    tctx.beginPath(); tctx.arc(node.x,node.y,r+2,0,Math.PI*2); tctx.fill();
+    tctx.fillStyle = COLORS.chamberPaper;
     tctx.beginPath(); tctx.arc(node.x,node.y,r,0,Math.PI*2); tctx.fill();
-    tctx.strokeStyle = COLORS.tunnelRim;
+    tctx.strokeStyle = rgba(INK,0.28);
     tctx.lineWidth = 1;
-    tctx.globalAlpha = 0.4;
-    for(let i=0;i<6;i++){
+    for(let i=0;i<7;i++){
       const a = Math.random()*Math.PI*2;
-      const rr = r*0.5 + Math.random()*r*0.3;
-      tctx.beginPath(); tctx.arc(node.x,node.y,rr,a,a+0.6); tctx.stroke();
+      const rr = r*0.45 + Math.random()*r*0.35;
+      tctx.beginPath(); tctx.arc(node.x,node.y,rr,a,a+0.55); tctx.stroke();
     }
-    tctx.globalAlpha = 1;
   }
   function drawTerrainFull(){
     const tctx = W.terrainCtx;
     tctx.clearRect(0,0,W.width,W.height);
     tctx.fillStyle = COLORS.dirt;
     tctx.fillRect(0, W.groundY, W.width, W.height-W.groundY);
+    // colored-pencil cross-hatch shading, two directions
     tctx.strokeStyle = COLORS.hatch;
     tctx.lineWidth = 1;
     for(let y = W.groundY+6; y < W.height+40; y += 11){
       tctx.beginPath(); tctx.moveTo(0,y); tctx.lineTo(W.width, y-44); tctx.stroke();
+    }
+    tctx.strokeStyle = rgba(ACCENT2,0.10);
+    for(let y = W.groundY+10; y < W.height+50; y += 15){
+      tctx.beginPath(); tctx.moveTo(0,y-50); tctx.lineTo(W.width, y); tctx.stroke();
     }
     for(const e of W.edges) drawEdgeStamp(e);
     for(const n of W.nodes){ if(n.type !== 'tunnel') drawChamberStamp(n); }
@@ -413,7 +500,7 @@
         if(f.amount <= 0){ f.active=false; f.respawnTimer = 4+Math.random()*6; }
         ant.carrying = true;
         playSound('found');
-        for(const pt of ant.trail){ W.pheromone.push({x:pt.x,y:pt.y,ttl:16+Math.random()*6}); }
+        for(const pt of ant.trail){ W.pheromone.push({x:pt.x,y:pt.y,ttl:16+Math.random()*6, angle: Math.random()*Math.PI}); }
         while(W.pheromone.length > CFG.maxPher) W.pheromone.shift();
         ant.returnPath = ant.trail.slice().reverse();
         ant.returnIdx = 0;
@@ -637,16 +724,17 @@
     const cx = W.width*0.86, cy = W.height*0.13, r = Math.min(W.width,W.height)*0.045+10;
     ctx.save(); ctx.translate(cx,cy);
     if(!REDUCED) ctx.rotate(timeNow*0.03);
-    ctx.strokeStyle = COLORS.ink; ctx.lineWidth = 2.4; ctx.lineCap = 'round';
-    for(let i=0;i<10;i++){
-      const a = (i/10)*Math.PI*2;
+    paperShape(function(){
       ctx.beginPath();
-      ctx.moveTo(Math.cos(a)*(r+4), Math.sin(a)*(r+4));
-      ctx.lineTo(Math.cos(a)*(r+14), Math.sin(a)*(r+14));
-      ctx.stroke();
-    }
-    ctx.beginPath(); ctx.fillStyle = COLORS.accent2; ctx.arc(0,0,r,0,Math.PI*2); ctx.fill();
-    ctx.lineWidth = 2.6; ctx.stroke();
+      const spikes = 10;
+      for(let i=0;i<spikes*2;i++){
+        const ang = (i/(spikes*2))*Math.PI*2;
+        const rad = (i%2===0) ? r+13 : r;
+        const px = Math.cos(ang)*rad, py = Math.sin(ang)*rad;
+        if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+      }
+      ctx.closePath();
+    }, COLORS.accent2, COLORS.ink, 2.4);
     ctx.restore();
   }
   function drawClouds(){
@@ -654,10 +742,11 @@
       const drift = REDUCED ? 0 : Math.sin(timeNow*0.06+c.ph)*18;
       const x = c.fx*W.width + drift, y = c.fy*W.height;
       ctx.save(); ctx.translate(x,y); ctx.scale(c.s,c.s);
-      ctx.fillStyle = COLORS.cloud;
-      ctx.strokeStyle = rgba(INK,0.25); ctx.lineWidth = 1;
-      const puffs = [[0,0,16],[16,4,12],[-15,5,12],[7,-7,11],[-6,-6,10]];
-      for(const p of puffs){ ctx.beginPath(); ctx.arc(p[0],p[1],p[2],0,Math.PI*2); ctx.fill(); ctx.stroke(); }
+      paperShape(function(){
+        ctx.beginPath();
+        const puffs = [[0,0,16],[16,4,12],[-15,5,12],[7,-7,11],[-6,-6,10]];
+        for(const p of puffs){ ctx.moveTo(p[0]+p[2],p[1]); ctx.arc(p[0],p[1],p[2],0,Math.PI*2); }
+      }, COLORS.cloud, COLORS.ink, 1.6);
       ctx.restore();
     }
   }
@@ -665,24 +754,32 @@
     for(const g of W.grass){
       const x = g.fx*W.width, y = W.groundY;
       ctx.save(); ctx.translate(x,y); ctx.rotate(g.tilt);
-      ctx.strokeStyle = g.tone===1 ? COLORS.accent1 : COLORS.accent2;
-      ctx.lineWidth = 2.4; ctx.lineCap = 'round';
-      ctx.beginPath(); ctx.moveTo(0,0); ctx.quadraticCurveTo(3,-g.h*0.6,1,-g.h); ctx.stroke();
+      const col = g.tone===1 ? COLORS.accent1 : COLORS.accent2;
+      crayonLine(function(){
+        ctx.beginPath(); ctx.moveTo(0,0); ctx.quadraticCurveTo(3,-g.h*0.6,1,-g.h);
+      }, col, 2.6, 2);
       ctx.restore();
     }
   }
   function drawGroundLine(){
     const pts = W.groundJitter;
-    ctx.beginPath();
-    ctx.moveTo(pts[0].fx*W.width, W.groundY+pts[0].dy);
-    for(let i=1;i<pts.length;i++){ ctx.lineTo(pts[i].fx*W.width, W.groundY+pts[i].dy); }
-    ctx.strokeStyle = COLORS.ink; ctx.lineWidth = 3; ctx.lineJoin = 'round'; ctx.stroke();
+    crayonLine(function(){
+      ctx.beginPath();
+      ctx.moveTo(pts[0].fx*W.width, W.groundY+pts[0].dy);
+      for(let i=1;i<pts.length;i++){ ctx.lineTo(pts[i].fx*W.width, W.groundY+pts[i].dy); }
+    }, COLORS.ink, 3.2, 3);
   }
   function drawPheromone(){
     for(const p of W.pheromone){
-      const alpha = Math.max(0, Math.min(0.32, p.ttl/20));
-      ctx.fillStyle = rgba(ACCENT1, alpha);
-      ctx.beginPath(); ctx.arc(p.x,p.y,2.4,0,Math.PI*2); ctx.fill();
+      const alpha = Math.max(0, Math.min(0.4, p.ttl/20));
+      ctx.save();
+      ctx.translate(p.x,p.y);
+      ctx.rotate(p.angle||0);
+      ctx.strokeStyle = rgba(ACCENT1, alpha);
+      ctx.lineWidth = 1.4;
+      ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(-2.2,0); ctx.lineTo(2.2,0); ctx.stroke();
+      ctx.restore();
     }
   }
   function drawFoods(){
@@ -690,9 +787,9 @@
       if(!f.active) continue;
       const bob = REDUCED ? 0 : Math.sin(timeNow*2+f.seed)*2;
       ctx.save(); ctx.translate(f.x, f.y+bob); ctx.rotate(Math.sin(f.seed)*0.3);
-      ctx.beginPath(); ctx.ellipse(0,0,7,4.2,0,0,Math.PI*2);
-      ctx.fillStyle = COLORS.accent2; ctx.fill();
-      ctx.lineWidth = 1.6; ctx.strokeStyle = COLORS.ink; ctx.stroke();
+      paperShape(function(){
+        ctx.beginPath(); ctx.ellipse(0,0,7,4.2,0,0,Math.PI*2);
+      }, COLORS.accent2, COLORS.ink, 1.6);
       ctx.beginPath(); ctx.arc(-2,-1,1.3,0,Math.PI*2); ctx.fillStyle = COLORS.accent1; ctx.fill();
       ctx.restore();
     }
@@ -702,9 +799,13 @@
     const n = Math.min(12, Math.floor(W.storageFood));
     for(let i=0;i<n;i++){
       const d = W.storageDots[i];
-      ctx.beginPath(); ctx.arc(node.x+d.ox, node.y+d.oy, 3, 0, Math.PI*2);
-      ctx.fillStyle = COLORS.accent2; ctx.fill();
-      ctx.strokeStyle = COLORS.ink; ctx.lineWidth = 0.8; ctx.stroke();
+      ctx.save();
+      ctx.translate(node.x+d.ox, node.y+d.oy);
+      ctx.rotate(d.rot||0);
+      paperShape(function(){
+        ctx.beginPath(); ctx.rect(-2.6,-2.6,5.2,5.2);
+      }, COLORS.accent2, COLORS.ink, 0.9);
+      ctx.restore();
     }
   }
   function drawEggs(){
@@ -713,23 +814,17 @@
       const x = nn.x+e.ox, y = nn.y+e.oy;
       ctx.save(); ctx.translate(x,y);
       if(e.stage === 'egg'){
-        ctx.beginPath(); ctx.ellipse(0,0,4,5,0,0,Math.PI*2);
-        ctx.fillStyle = COLORS.eggColor; ctx.fill();
-        ctx.lineWidth = 1; ctx.strokeStyle = COLORS.ink; ctx.stroke();
+        paperShape(function(){ ctx.beginPath(); ctx.ellipse(0,0,4,5,0,0,Math.PI*2); }, COLORS.eggColor, COLORS.ink, 1.1);
       } else if(e.stage === 'larva'){
         const len = 7+9*(e.progress/e.durationLarva);
         ctx.rotate(Math.sin(timeNow*1.5+e.ox)*0.2);
-        ctx.beginPath(); ctx.ellipse(0,0,len*0.4,4.4,0,0,Math.PI*2);
-        ctx.fillStyle = COLORS.accent2; ctx.fill();
-        ctx.strokeStyle = COLORS.ink; ctx.lineWidth = 1; ctx.stroke();
+        paperShape(function(){ ctx.beginPath(); ctx.ellipse(0,0,len*0.4,4.4,0,0,Math.PI*2); }, COLORS.accent2, COLORS.ink, 1.1);
         for(let s=-1;s<=1;s++){
-          ctx.beginPath(); ctx.moveTo(s*len*0.25,-3); ctx.lineTo(s*len*0.25,3);
-          ctx.strokeStyle = COLORS.ink; ctx.lineWidth = 0.6; ctx.stroke();
+          const ss = s;
+          crayonLine(function(){ ctx.beginPath(); ctx.moveTo(ss*len*0.25,-3); ctx.lineTo(ss*len*0.25,3); }, COLORS.ink, 0.9, 1);
         }
       } else {
-        ctx.beginPath(); ctx.ellipse(0,0,6,7,0,0,Math.PI*2);
-        ctx.fillStyle = COLORS.pupaColor; ctx.fill();
-        ctx.strokeStyle = COLORS.ink; ctx.lineWidth = 1; ctx.stroke();
+        paperShape(function(){ ctx.beginPath(); ctx.ellipse(0,0,6,7,0,0,Math.PI*2); }, COLORS.pupaColor, COLORS.ink, 1.1);
       }
       ctx.restore();
     }
@@ -738,33 +833,37 @@
     const q = W.queen;
     const breathe = 1 + (REDUCED ? 0 : Math.sin(timeNow*1.4+q.wobbleSeed)*0.05);
     ctx.save(); ctx.translate(q.x,q.y); ctx.scale(breathe,breathe);
-    ctx.strokeStyle = COLORS.ink; ctx.lineWidth = 1.6; ctx.fillStyle = COLORS.accent2;
-    ctx.beginPath(); ctx.ellipse(-10,0,11,7.5,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
-    ctx.beginPath(); ctx.ellipse(2,0,5.5,4.4,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
-    ctx.beginPath(); ctx.ellipse(10,0,4.2,3.6,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
-    ctx.strokeStyle = COLORS.accent1; ctx.lineWidth = 1.4;
-    ctx.beginPath();
-    ctx.moveTo(6,-6); ctx.lineTo(9,-11); ctx.lineTo(12,-7); ctx.lineTo(15,-12); ctx.lineTo(17,-7);
-    ctx.stroke();
+    paperShape(function(){
+      ctx.beginPath();
+      ctx.ellipse(-10,0,11,7.5,0,0,Math.PI*2);
+      ctx.moveTo(2+5.5,0); ctx.ellipse(2,0,5.5,4.4,0,0,Math.PI*2);
+      ctx.moveTo(10+4.2,0); ctx.ellipse(10,0,4.2,3.6,0,0,Math.PI*2);
+    }, COLORS.accent2, COLORS.ink, 1.7);
+    crayonLine(function(){
+      ctx.beginPath();
+      ctx.moveTo(6,-6); ctx.lineTo(9,-11); ctx.lineTo(12,-7); ctx.lineTo(15,-12); ctx.lineTo(17,-7);
+    }, COLORS.accent1, 1.6, 2);
     ctx.restore();
   }
   function drawAnt(ant){
     const wob = REDUCED ? 0 : Math.sin(timeNow*5+ant.wobbleSeed)*0.6;
     ctx.save(); ctx.translate(ant.x, ant.y); ctx.rotate(ant.angle || 0);
-    ctx.strokeStyle = COLORS.ink; ctx.fillStyle = roleColor(ant.role); ctx.lineWidth = 1.3;
     for(let i=-1;i<=1;i++){
-      const swing = Math.sin(ant.legPhase + i*2.1) * (REDUCED ? 2 : 4.5);
-      ctx.beginPath(); ctx.moveTo(i*3.2, 0); ctx.lineTo(i*3.2+swing*0.4, 6+Math.abs(swing)); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(i*3.2, 0); ctx.lineTo(i*3.2-swing*0.4, -6-Math.abs(swing)); ctx.stroke();
+      const ii = i;
+      const swing = Math.sin(ant.legPhase + ii*2.1) * (REDUCED ? 2 : 4.5);
+      crayonLine(function(){ ctx.beginPath(); ctx.moveTo(ii*3.2,0); ctx.lineTo(ii*3.2+swing*0.4, 6+Math.abs(swing)); }, COLORS.ink, 1.3, 1);
+      crayonLine(function(){ ctx.beginPath(); ctx.moveTo(ii*3.2,0); ctx.lineTo(ii*3.2-swing*0.4, -6-Math.abs(swing)); }, COLORS.ink, 1.3, 1);
     }
-    ctx.beginPath(); ctx.ellipse(-6, wob*0.2, 5.2, 3.6, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
-    ctx.beginPath(); ctx.ellipse(0,0,3.2,2.6,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
-    ctx.beginPath(); ctx.ellipse(5,0,2.6,2.2,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(6.8,-1); ctx.quadraticCurveTo(10,-5,9,-7); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(6.8,1); ctx.quadraticCurveTo(10,5,9,7); ctx.stroke();
+    paperShape(function(){
+      ctx.beginPath();
+      ctx.ellipse(-6, wob*0.2, 5.2, 3.6, 0,0,Math.PI*2);
+      ctx.moveTo(0+3.2,0); ctx.ellipse(0,0,3.2,2.6,0,0,Math.PI*2);
+      ctx.moveTo(5+2.6,0); ctx.ellipse(5,0,2.6,2.2,0,0,Math.PI*2);
+    }, roleColor(ant.role), COLORS.ink, 1.3);
+    crayonLine(function(){ ctx.beginPath(); ctx.moveTo(6.8,-1); ctx.quadraticCurveTo(10,-5,9,-7); }, COLORS.ink, 1, 1);
+    crayonLine(function(){ ctx.beginPath(); ctx.moveTo(6.8,1); ctx.quadraticCurveTo(10,5,9,7); }, COLORS.ink, 1, 1);
     if(ant.carrying){
-      ctx.beginPath(); ctx.fillStyle = COLORS.accent2; ctx.arc(-11,0,2.6,0,Math.PI*2); ctx.fill();
-      ctx.strokeStyle = COLORS.ink; ctx.lineWidth = 1; ctx.stroke();
+      paperShape(function(){ ctx.beginPath(); ctx.arc(-11,0,2.6,0,Math.PI*2); }, COLORS.accent2, COLORS.ink, 1);
     }
     ctx.restore();
   }
@@ -780,17 +879,15 @@
       ctx.save();
       if(f.type === 'spark'){
         ctx.globalAlpha = Math.max(0, f.ttl/0.6);
-        ctx.strokeStyle = COLORS.accent1; ctx.lineWidth = 2;
         for(let i=0;i<6;i++){
           const a = (i/6)*Math.PI*2;
-          ctx.beginPath(); ctx.moveTo(f.x,f.y); ctx.lineTo(f.x+Math.cos(a)*10, f.y+Math.sin(a)*10); ctx.stroke();
+          crayonLine(function(){ ctx.beginPath(); ctx.moveTo(f.x,f.y); ctx.lineTo(f.x+Math.cos(a)*10, f.y+Math.sin(a)*10); }, COLORS.accent1, 2, 1);
         }
       } else {
         const rise = (0.9 - f.ttl) * 14;
         ctx.globalAlpha = Math.max(0, f.ttl/0.9);
         ctx.translate(f.x, f.y - rise);
-        ctx.fillStyle = COLORS.accent2; ctx.strokeStyle = COLORS.ink; ctx.lineWidth = 1;
-        drawHeartPath(); ctx.fill(); ctx.stroke();
+        paperShape(drawHeartPath, COLORS.accent2, COLORS.ink, 1);
       }
       ctx.restore();
     }
@@ -811,6 +908,11 @@
     drawQueen();
     for(const a of W.ants) drawAnt(a);
     drawFx();
+    // craft-paper grain, laid over the whole scene last
+    ctx.save();
+    ctx.fillStyle = getGrainPattern();
+    ctx.fillRect(0,0,W.width,W.height);
+    ctx.restore();
   }
 
   /* ---------- WORLD INIT ---------- */
@@ -831,7 +933,7 @@
     for(const role of roles) spawnInitialAnt(role);
     W.queen = { x: W.nodes[W.queenIdx].x, y: W.nodes[W.queenIdx].y, wobbleSeed: Math.random()*10, timer: 3+Math.random()*3 };
     W.storageDots = [];
-    for(let i=0;i<12;i++) W.storageDots.push({ ox:(Math.random()-0.5)*22, oy:(Math.random()-0.5)*14 });
+    for(let i=0;i<12;i++) W.storageDots.push({ ox:(Math.random()-0.5)*22, oy:(Math.random()-0.5)*14, rot:(Math.random()-0.5)*1.2 });
 
     const gcount = Math.max(14, Math.round(width/26));
     W.grass = [];

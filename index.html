@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Ant Colony — a living hive, drawn in crayon</title>
-<meta name="description" content="A side-view ant colony simulation: a queen lays eggs, nurses raise larvae, foragers hunt for food and lay scent trails, and diggers extend the tunnels — a new colony every time you load it.">
+<title>Ant Colony — a living hive, in crayon and cut paper</title>
+<meta name="description" content="A side-view ant colony simulation rendered like a crayon drawing cut from construction paper: a queen lays eggs, nurses raise larvae, foragers hunt for food and lay scent trails, and diggers extend the tunnels — a new colony every time you load it.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Patrick+Hand&display=swap" rel="stylesheet">
@@ -17,7 +17,7 @@
 
   <canvas id="sim-canvas" aria-hidden="true"></canvas>
 
-  <p class="sr-only">An interactive side-view ant colony simulation: a queen lays eggs, nurses raise larvae in the nursery, foragers search the surface for food and lay scent trails home, and digger ants keep extending the tunnels. The colony is procedurally generated anew on every load or reset.</p>
+  <p class="sr-only">An interactive side-view ant colony simulation, drawn like crayon and construction-paper cutouts: a queen lays eggs, nurses raise larvae in the nursery, foragers search the surface for food and lay scent trails home, and digger ants keep extending the tunnels. The colony is procedurally generated anew on every load or reset.</p>
 
   <noscript>
     <div class="noscript-note">
@@ -46,7 +46,7 @@
   <!-- ABOUT START -->
   <section class="about-panel" id="about-panel" role="dialog" aria-label="About this simulation" hidden>
     <h2>What's happening down there?</h2>
-    <p>This is a tiny biological simulation, not a video to watch passively — it keeps running until you reload the page.</p>
+    <p>This tiny biological simulation is drawn like a crayon-and-construction-paper diorama, and it keeps running until you reload the page — nothing here is a video to watch passively.</p>
     <ul>
       <li><strong>The queen</strong> lays an egg whenever there's enough stored food and room for another ant.</li>
       <li><strong>Eggs</strong> become larvae, then pupae, then hatch into a brand new worker — forager, nurse, or digger.</li>

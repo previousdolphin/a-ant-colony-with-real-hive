@@ -1,5 +1,5 @@
 /* ============================================================
-   ANT COLONY — crayon-sketch side-view simulation
+   ANT COLONY — crayon & construction-paper cutout simulation
    Palette (user overrides): mint bg, two greens, deep ink
    ============================================================ */
 
@@ -14,6 +14,18 @@
   --card-bg-strong: #c2f3df;
   --sky-tint: #a6f0d6;
 
+  /* colored-pencil / paper-fiber overlay tones, derived from --ink and white */
+  --grain-dark: color-mix(in srgb, var(--ink) 10%, transparent);
+  --grain-light: color-mix(in srgb, #ffffff 14%, transparent);
+
+  /* torn-paper silhouettes, reused by any "cut card" element */
+  --torn-card: polygon(
+    2% 6%, 10% 1%, 20% 5%, 32% 0%, 45% 4%, 58% 0%, 72% 4%, 85% 0%, 96% 5%, 100% 12%,
+    97% 25%, 100% 38%, 96% 52%, 100% 66%, 97% 80%, 100% 92%,
+    90% 98%, 78% 95%, 65% 99%, 52% 95%, 38% 99%, 25% 95%, 12% 99%, 3% 94%,
+    0% 82%, 4% 68%, 0% 54%, 3% 40%, 0% 26%, 3% 14%
+  );
+
   --font-head: 'Baloo 2', 'Segoe UI Rounded', system-ui, sans-serif;
   --font-body: 'Patrick Hand', 'Comic Sans MS', system-ui, sans-serif;
 }
@@ -25,7 +37,10 @@ html, body{
   padding: 0;
   height: 100%;
   overflow: hidden; /* the stage fills the screen; no page scroll */
-  background: var(--bg);
+  background-color: var(--bg);
+  background-image:
+    repeating-linear-gradient(115deg, var(--grain-dark) 0 2px, transparent 2px 7px),
+    repeating-linear-gradient(25deg, var(--grain-light) 0 1px, transparent 1px 6px);
   font-family: var(--font-body);
   color: var(--ink);
 }
@@ -69,10 +84,14 @@ html, body{
   text-align: center;
 }
 .noscript-note p{
-  background: var(--card-bg);
+  background-color: var(--card-bg);
+  background-image:
+    repeating-linear-gradient(110deg, var(--grain-dark) 0 2px, transparent 2px 7px),
+    repeating-linear-gradient(20deg, var(--grain-light) 0 1px, transparent 1px 6px);
   border: 3px solid var(--ink);
-  border-radius: 18px 26px 20px 24px;
-  padding: 1.2rem 1.6rem;
+  clip-path: var(--torn-card);
+  filter: drop-shadow(4px 5px 0 rgba(40,56,44,0.32));
+  padding: 1.4rem 1.9rem;
   font-family: var(--font-head);
   font-size: clamp(1rem, 2.5vw, 1.3rem);
   max-width: 32rem;
@@ -84,11 +103,15 @@ html, body{
   top: clamp(0.6rem, 2vw, 1.4rem);
   left: clamp(0.6rem, 2vw, 1.4rem);
   z-index: 20;
-  background: var(--card-bg);
+  background-color: var(--card-bg);
+  background-image:
+    repeating-linear-gradient(110deg, var(--grain-dark) 0 2px, transparent 2px 7px),
+    repeating-linear-gradient(20deg, var(--grain-light) 0 1px, transparent 1px 6px);
   border: 3px solid var(--ink);
-  border-radius: 14px 22px 16px 20px;
-  box-shadow: 4px 5px 0 rgba(40,56,44,0.25);
-  padding: 0.7rem 0.9rem 0.8rem;
+  clip-path: var(--torn-card);
+  filter: drop-shadow(4px 5px 0 rgba(40,56,44,0.3));
+  transform: rotate(-0.8deg);
+  padding: 0.9rem 1.1rem 1rem;
   max-width: min(78vw, 20rem);
 }
 
@@ -99,12 +122,13 @@ html, body{
   margin: 0 0 0.15rem;
   letter-spacing: 0.02em;
   color: var(--ink);
+  text-shadow: 2px 2px 0 var(--accent2), 4px 4px 0 rgba(40,56,44,0.22);
 }
 
 .hud-hint{
   margin: 0 0 0.55rem;
   font-size: clamp(0.72rem, 2.4vw, 0.85rem);
-  opacity: 0.8;
+  opacity: 0.85;
   line-height: 1.25;
 }
 
@@ -136,7 +160,7 @@ html, body{
 .hud-buttons{
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem;
+  gap: 0.5rem;
 }
 
 .hud-buttons button{
@@ -146,23 +170,26 @@ html, body{
   border: 2.5px solid var(--ink);
   background: var(--accent2);
   color: var(--ink);
-  border-radius: 10px 14px 10px 14px;
+  border-radius: 10px 16px 9px 15px / 14px 9px 16px 10px;
   padding: 0.5rem 0.7rem;
   min-height: 44px;
   min-width: 44px;
   cursor: pointer;
-  box-shadow: 2px 3px 0 rgba(40,56,44,0.3);
+  filter: drop-shadow(2.5px 3.5px 0 rgba(40,56,44,0.32));
   transition: transform 0.12s ease, background 0.15s ease;
 }
+.hud-buttons button:nth-child(1){ transform: rotate(-2deg); }
+.hud-buttons button:nth-child(2){ transform: rotate(1.5deg); }
+.hud-buttons button:nth-child(3){ transform: rotate(-1deg); }
 .hud-buttons button:hover{
   background: var(--accent1);
-  transform: translateY(-1px);
+  transform: translateY(-2px) rotate(0deg);
 }
 .hud-buttons button:active{
-  transform: translateY(1px);
-  box-shadow: 1px 1px 0 rgba(40,56,44,0.3);
+  transform: translateY(1px) rotate(0deg);
+  filter: drop-shadow(1px 1.5px 0 rgba(40,56,44,0.32));
 }
-#btn-reset{ flex: 1 1 100%; }
+#btn-reset{ flex: 1 1 100%; transform: rotate(0.6deg); }
 
 button:focus-visible,
 a:focus-visible{
@@ -183,13 +210,16 @@ a:focus-visible{
   position: fixed;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%) rotate(0.6deg);
   z-index: 40;
-  background: var(--card-bg-strong);
+  background-color: var(--card-bg-strong);
+  background-image:
+    repeating-linear-gradient(110deg, var(--grain-dark) 0 2px, transparent 2px 7px),
+    repeating-linear-gradient(20deg, var(--grain-light) 0 1px, transparent 1px 6px);
   border: 3px solid var(--ink);
-  border-radius: 20px 28px 18px 26px;
-  box-shadow: 6px 7px 0 rgba(40,56,44,0.3);
-  padding: 1.3rem 1.5rem;
+  clip-path: var(--torn-card);
+  filter: drop-shadow(6px 8px 0 rgba(40,56,44,0.3));
+  padding: 1.5rem 1.8rem;
   width: min(92vw, 34rem);
   max-height: 86vh;
   overflow-y: auto;
@@ -200,15 +230,30 @@ a:focus-visible{
   font-weight: 800;
   margin-top: 0;
   font-size: clamp(1.2rem, 4vw, 1.6rem);
+  text-shadow: 2px 2px 0 var(--accent2);
 }
 
 .about-panel p{ line-height: 1.5; }
 
 .about-panel ul{
-  padding-left: 1.2rem;
+  list-style: none;
+  padding-left: 0;
   line-height: 1.5;
 }
-.about-panel li{ margin-bottom: 0.4rem; }
+.about-panel li{
+  margin-bottom: 0.5rem;
+  padding-left: 1.5em;
+  position: relative;
+}
+.about-panel li::before{
+  content: "✂";
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: var(--accent1);
+  font-size: 0.95em;
+  transform: rotate(-8deg);
+}
 
 .about-panel kbd{
   font-family: var(--font-body);
@@ -224,14 +269,16 @@ a:focus-visible{
   border: 2.5px solid var(--ink);
   background: var(--accent1);
   color: var(--ink);
-  border-radius: 10px 14px 10px 14px;
+  border-radius: 10px 16px 9px 15px / 14px 9px 16px 10px;
   padding: 0.6rem 1.1rem;
   min-height: 44px;
   cursor: pointer;
   margin-top: 0.4rem;
-  box-shadow: 2px 3px 0 rgba(40,56,44,0.3);
+  filter: drop-shadow(2.5px 3.5px 0 rgba(40,56,44,0.3));
+  transition: transform 0.12s ease, background 0.15s ease;
 }
-.about-panel button:hover{ background: var(--accent2); }
+.about-panel button:hover{ background: var(--accent2); transform: translateY(-2px); }
+.about-panel button:active{ transform: translateY(1px); }
 
 /* ---- FOOTER / CREDIT ---- */
 .corner-footer{
@@ -245,8 +292,8 @@ a:focus-visible{
   margin: 0;
   font-size: 0.68rem;
   color: var(--ink);
-  opacity: 0.55;
-  background: rgba(217,248,236,0.6);
+  opacity: 0.6;
+  background: rgba(217,248,236,0.65);
   padding: 0.1rem 0.4rem;
   border-radius: 6px;
   pointer-events: auto;
@@ -258,7 +305,7 @@ a:focus-visible{
 
 /* ---- RESPONSIVE ---- */
 @media (min-width: 768px){
-  .hud{ padding: 0.9rem 1.1rem 1rem; max-width: 22rem; }
+  .hud{ padding: 1rem 1.2rem 1.1rem; max-width: 22rem; }
   .hud-stats{ gap: 1.3rem; }
   .hud-buttons button{ font-size: 0.9rem; }
 }
@@ -271,4 +318,5 @@ a:focus-visible{
 @media (prefers-reduced-motion: reduce){
   .hud-buttons button,
   .about-panel button{ transition: none; }
+  .hud, .hud-buttons button, #btn-reset, .about-panel{ transform: none !important; }
 }
